@@ -89,77 +89,83 @@ class DatabaseSeeder extends Seeder
         $tennisPlayers = Player::factory()->count(8)->independent()->create(['sport_id' => $tennis->id]);
         $chessPlayers = Player::factory()->count(8)->independent()->create(['sport_id' => $chess->id]);
 
-        $championsLeague = Tournament::factory()
-            ->for($football, 'sport')
-            ->for($organizer ?? $admin, 'organizer')
-            ->registration()
-            ->create([
+        $championsLeague = Tournament::firstOrCreate(
+            ['slug' => 'champions-cup-2026'],
+            [
+                'sport_id' => $football->id,
+                'organizer_id' => ($organizer ?? $admin)?->id,
                 'name' => 'Champions Cup 2026',
-                'slug' => 'champions-cup-2026',
                 'description' => 'Annual knockout tournament for top football clubs.',
                 'format' => TournamentFormat::SingleElimination,
+                'status' => 'registration',
                 'max_participants' => 16,
                 'min_participants' => 4,
                 'starts_at' => now()->addMonths(1),
                 'ends_at' => now()->addMonths(2),
                 'registration_deadline' => now()->addWeeks(2),
+                'participant_type' => 'team',
                 'is_featured' => true,
-            ]);
+            ]
+        );
         $championsLeague->venues()->sync($venues->first()->id === null ? [] : [$venues->first()->id => ['is_primary' => true]]);
         $championsLeague->venues()->syncWithoutDetaching([$venues[1]->id => ['is_primary' => false]]);
 
-        $leagueSeason = Tournament::factory()
-            ->for($basketball, 'sport')
-            ->for($organizer ?? $admin, 'organizer')
-            ->inProgress()
-            ->create([
+        $leagueSeason = Tournament::firstOrCreate(
+            ['slug' => 'city-league-2026'],
+            [
+                'sport_id' => $basketball->id,
+                'organizer_id' => ($organizer ?? $admin)?->id,
                 'name' => 'City League 2026',
-                'slug' => 'city-league-2026',
                 'description' => 'Round-robin season for city basketball teams.',
                 'format' => TournamentFormat::RoundRobin,
+                'status' => 'in_progress',
                 'max_participants' => 10,
                 'min_participants' => 4,
                 'starts_at' => now()->subWeeks(2),
                 'ends_at' => now()->addWeeks(4),
                 'registration_deadline' => now()->subMonths(1),
+                'participant_type' => 'team',
                 'is_featured' => true,
-            ]);
+            ]
+        );
 
-        $openTennis = Tournament::factory()
-            ->for($tennis, 'sport')
-            ->for($organizer ?? $admin, 'organizer')
-            ->individual()
-            ->registration()
-            ->create([
+        $openTennis = Tournament::firstOrCreate(
+            ['slug' => 'open-tennis-series'],
+            [
+                'sport_id' => $tennis->id,
+                'organizer_id' => ($organizer ?? $admin)?->id,
                 'name' => 'Open Tennis Series',
-                'slug' => 'open-tennis-series',
                 'description' => 'Singles knockout tournament with 8 players.',
                 'format' => TournamentFormat::SingleElimination,
+                'status' => 'registration',
                 'max_participants' => 8,
                 'min_participants' => 4,
                 'starts_at' => now()->addWeeks(3),
                 'ends_at' => now()->addMonths(2),
                 'registration_deadline' => now()->addWeeks(1),
+                'participant_type' => 'player',
                 'is_featured' => false,
-            ]);
+            ]
+        );
 
-        $chessClassic = Tournament::factory()
-            ->for($chess, 'sport')
-            ->for($organizer ?? $admin, 'organizer')
-            ->individual()
-            ->completed()
-            ->create([
+        $chessClassic = Tournament::firstOrCreate(
+            ['slug' => 'chess-classic-2025'],
+            [
+                'sport_id' => $chess->id,
+                'organizer_id' => ($organizer ?? $admin)?->id,
                 'name' => 'Chess Classic 2025',
-                'slug' => 'chess-classic-2025',
                 'description' => 'Closed swiss-system tournament, classical time control.',
                 'format' => TournamentFormat::Swiss,
+                'status' => 'completed',
                 'max_participants' => 10,
                 'min_participants' => 4,
                 'starts_at' => now()->subMonths(3),
                 'ends_at' => now()->subMonths(2),
                 'registration_deadline' => now()->subMonths(4),
+                'participant_type' => 'player',
                 'is_featured' => false,
-            ]);
+            ]
+        );
 
         $footballTeams->take(6)->each(function (Team $team) use ($championsLeague): void {
             $championsLeague->registrations()->create([
@@ -197,9 +203,19 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
-        DB::table('tournament_groups')->insert([
-            ['tournament_id' => $leagueSeason->id, 'name' => 'Group A', 'code' => 'A', 'display_order' => 1, 'created_at' => now(), 'updated_at' => now()],
-            ['tournament_id' => $leagueSeason->id, 'name' => 'Group B', 'code' => 'B', 'display_order' => 2, 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        foreach ([
+            ['name' => 'Group A', 'code' => 'A', 'display_order' => 1],
+            ['name' => 'Group B', 'code' => 'B', 'display_order' => 2],
+        ] as $group) {
+            DB::table('tournament_groups')->updateOrInsert(
+                ['tournament_id' => $leagueSeason->id, 'name' => $group['name']],
+                [
+                    'code' => $group['code'],
+                    'display_order' => $group['display_order'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+        }
     }
 }
