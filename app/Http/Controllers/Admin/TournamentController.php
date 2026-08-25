@@ -62,6 +62,18 @@ class TournamentController extends Controller
         ]);
     }
 
+    public function userCreate(): View
+    {
+        $this->authorize('create', Tournament::class);
+
+        return view('user.tournaments.create', [
+            'sports' => Sport::orderBy('name')->get(),
+            'formats' => TournamentFormat::cases(),
+            'statuses' => TournamentStatus::cases(),
+            'participantTypes' => ParticipantType::cases(),
+        ]);
+    }
+
     public function store(StoreTournamentRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -83,6 +95,22 @@ class TournamentController extends Controller
         }
 
         return redirect()->route('admin.tournaments.index')->with('status', "Tournament '{$tournament->name}' created.");
+    }
+
+    public function userStore(StoreTournamentRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        unset($data['venues']);
+
+        $data['organizer_id'] = $request->user()->id;
+
+        if (empty($data['slug']) && ! empty($data['name'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
+
+        $tournament = Tournament::create($data);
+
+        return redirect()->route('dashboard')->with('status', "Tournament '{$tournament->name}' created.");
     }
 
     public function show(Tournament $tournament): View

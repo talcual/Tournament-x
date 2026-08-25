@@ -37,13 +37,28 @@ class RolePermissionTest extends TestCase
             ->assertOk();
     }
 
-    public function test_user_role_cannot_create_tournaments(): void
+    public function test_user_role_can_create_tournaments(): void
     {
         $user = $this->createUserWithRole('user');
+        $sport = Sport::factory()->create();
 
         $this->actingAs($user)
-            ->get(route('admin.tournaments.create'))
-            ->assertForbidden();
+            ->post(route('user.tournaments.store'), [
+                'sport_id' => $sport->id,
+                'organizer_id' => $user->id,
+                'name' => 'My Community Cup',
+                'description' => 'Community tournament created by a regular user.',
+                'format' => 'single_elimination',
+                'status' => 'registration',
+                'participant_type' => 'team',
+                'min_participants' => 4,
+                'max_participants' => 16,
+                'starts_at' => now()->addMonth()->format('Y-m-d'),
+                'ends_at' => now()->addMonths(2)->format('Y-m-d'),
+            ])
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseHas('tournaments', ['name' => 'My Community Cup', 'organizer_id' => $user->id]);
     }
 
     public function test_organizer_can_create_tournament(): void

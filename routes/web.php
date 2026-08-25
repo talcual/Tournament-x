@@ -17,9 +17,10 @@ Route::get('/', [PublicTournamentController::class, 'index'])->name('home');
 
 Route::post('/locale', [LocaleController::class, 'switch'])->name('locale.switch');
 
-Route::get('/tournaments/{tournament:slug}', [PublicTournamentController::class, 'show'])->name('public.tournaments.show');
-
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/tournaments/create', [App\Http\Controllers\Admin\TournamentController::class, 'userCreate'])->name('user.tournaments.create');
+    Route::post('/tournaments', [App\Http\Controllers\Admin\TournamentController::class, 'userStore'])->name('user.tournaments.store');
+
     Route::get('/dashboard', function () {
         if (auth()->user()->hasAnyRole(['admin', 'organizer', 'referee'])) {
             return redirect()->route('admin.dashboard');
@@ -28,6 +29,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 });
+
+Route::get('/tournaments/{tournament:slug}', [PublicTournamentController::class, 'show'])->name('public.tournaments.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

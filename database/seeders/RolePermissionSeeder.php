@@ -43,7 +43,8 @@ class RolePermissionSeeder extends Seeder
                 'record match results',
             ],
             'user' => [
-                'view tournaments', 'view teams', 'view players',
+                'view tournaments', 'create tournaments', 'update tournaments', 'delete tournaments',
+                'view teams', 'view players',
                 'view venues', 'view sports', 'register tournaments',
             ],
         ];
